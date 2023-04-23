@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import plotly.express as px
 import pandas as pd
 import requests
@@ -42,6 +43,28 @@ def get_weight_data(
 
     # Get data and return
     df = pd.read_csv(filename)
+
+    # Common cols
+    mass = 'Total (g)'
+    cat = 'Category'
+    name = 'Item'
+
+    # Drop rows where no weight
+    df = df[~pd.isna(df[mass])]
+
+    # Drop rows where no category
+    df = df[~pd.isna(df[cat])]
+
+    # Get total weights by category, then make category sortable my total mass
+    mass_sums = df.groupby(cat).sum()
+    cat_list = mass_sums.sort_values(by=mass, ascending=False)[mass].keys()
+    cat_order = pd.api.types.CategoricalDtype(cat_list)
+    df[cat] = df[cat].astype(cat_order)
+    df = df.sort_values(cat)
+
+    # Sort by cat, then mass
+    df.sort_values(by=[cat, mass], ascending=[False, True], inplace=True, ignore_index=True)
+
     return df
 
 
@@ -54,38 +77,39 @@ def make_plot(
     :return: None
     """
 
-    # Get data
-    df = get_weight_data(cache=cache)
-
     # Common cols
     mass = 'Total (g)'
     cat = 'Category'
+    name = 'Item'
 
-    # Drop rows where no weight
-    df = df[~pd.isna(df[mass])]
+    # Get data, cats
+    df = get_weight_data(cache=cache)
+    print(df)
+    cats = df[cat].unique()
+    n_cats = len(cats)
 
-    # Drop rows where no category
-    df = df[~pd.isna(df[cat])]
+    # Make matplotlib objects
+    figure: plt.Figure = plt.figure()
+    ax: plt.Axes = figure.add_subplot()
 
-    # Get total weights by category, and sort
-    mass_sums = df.groupby(cat).sum()
-    cat_list = mass_sums.sort_values(by=mass, ascending=False)[mass].keys()
-    cat_order = pd.api.types.CategoricalDtype(cat_list)
-    df[cat] = df[cat].astype(cat_order)
-    df = df.sort_values(cat)
+    # Plot horizontal bar plot
+    ax.barh(
+        df.index, df[mass]
+    )
 
-    # Sort by cat, mass
-    df.sort_values(by=[cat, mass], ascending=[True, False], inplace=True)
+    # Format
+    figure.subplots_adjust(
+        left=0.3,
+    )
+    ax.set_xlabel('mass (g)')
+    ax.set_yticks(df.index, df[name])
+    for pos in ['right', 'top']:
+        ax.spines[pos].set_visible(False)
 
-    # Get unique categories
-    categories = df[cat].unique()
-
-
-    print('a')
-    fig = px.bar(df, x=cat, y=mass)
-    fig.show()
+    # Save
+    figure.savefig('pack_weight.png')
 
 
 
 if __name__ == '__main__':
-    make_plot(cache=False)
+    make_plot(cache=True)
