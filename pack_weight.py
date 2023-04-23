@@ -38,6 +38,7 @@ def get_weight_data(
     :param filename: Filename to write/read to.
     :return: pd.DataFrame
     """
+
     if not cache:
         google_sheet_to_csv(filename=filename)
 
@@ -82,29 +83,61 @@ def make_plot(
     cat = 'Category'
     name = 'Item'
 
+    # Colors
+    colors = ["#ea5545", "#f46a9b", "#ef9b20", "#edbf33", "#ede15b", "#bdcf32", "#87bc45", "#27aeef", "#b33dc6"][::-1]
+
     # Get data, cats
     df = get_weight_data(cache=cache)
-    print(df)
     cats = df[cat].unique()
     n_cats = len(cats)
 
+    # Create a colors dict for cat lookup
+    cat_colors = {}
+    for i, icat in enumerate(cats[::-1]):
+        cat_colors[icat] = colors[i]
+    df['colors'] = df[cat].map(cat_colors)
+
     # Make matplotlib objects
-    figure: plt.Figure = plt.figure()
-    ax: plt.Axes = figure.add_subplot()
+    figure: plt.Figure = plt.figure(
+        figsize=(7, 10),
+        dpi=300,
+    )
+    spec = figure.add_gridspec(5, 1)
+    tot_ax: plt.Axes = figure.add_subplot(spec[0, 0])
+    cat_ax: plt.Axes = figure.add_subplot(spec[1:5, 0])
+
+    # Plot totals
+    grouped = df.groupby(cat)[mass].sum()
+    x_pos = 0
+    for i, cat in enumerate(cats[::-1]):
+
+        # Get iteration values
+        i_val = grouped.loc[cat]
+        i_color = cat_colors[cat]
+
+        # Plot bar
+        tot_ax.barh(0, i_val, color=i_color, left=x_pos)
+        x_pos += i_val
 
     # Plot horizontal bar plot
-    ax.barh(
-        df.index, df[mass]
+    cat_ax.barh(
+        df.index, df[mass],
+        color=df['colors'],
     )
 
-    # Format
+    # Format categories
     figure.subplots_adjust(
         left=0.3,
+        top=0.9,
+        hspace=3,
     )
-    ax.set_xlabel('mass (g)')
-    ax.set_yticks(df.index, df[name])
-    for pos in ['right', 'top']:
-        ax.spines[pos].set_visible(False)
+    cat_ax.set_yticks(df.index, df[name])
+
+    # For both
+    for ax in [tot_ax, cat_ax]:
+        ax.set_xlabel('mass (g)')
+        for pos in ['right', 'top']:
+            ax.spines[pos].set_visible(False)
 
     # Save
     figure.savefig('pack_weight.png')
