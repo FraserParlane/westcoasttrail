@@ -197,6 +197,5 @@ def make_plot(
     figure.savefig('pack_weight.png')
 
 
-
 if __name__ == '__main__':
-    make_plot(cache=True)
+    make_plot(cache=False)
