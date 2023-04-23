@@ -107,17 +107,49 @@ def make_plot(
     cat_ax: plt.Axes = figure.add_subplot(spec[1:5, 0])
 
     # Plot totals
-    grouped = df.groupby(cat)[mass].sum()
+    grouped = df.groupby(cat)[mass].sum() / 1000
     x_pos = 0
     for i, cat in enumerate(cats[::-1]):
 
         # Get iteration values
         i_val = grouped.loc[cat]
         i_color = cat_colors[cat]
+        kg = round(i_val, 2)
 
         # Plot bar
         tot_ax.barh(0, i_val, color=i_color, left=x_pos)
+
+        # Add text
+        tot_ax.text(
+            x_pos + i_val / 2,
+            0.75,
+            f'{cat} ({kg} kg)',
+            color=i_color,
+            rotation=45,
+        )
+
+        # Increase baseline
         x_pos += i_val
+
+    # Add markers for target pack mass
+    my_mass_kg = 66 * 1000
+    mass_percent = [0.15, 0.2]
+    labels = ['min', 'max']
+
+    # For min, max
+    for i in range(2):
+
+        i_percent = int(mass_percent[i] * 100)
+        i_mass = my_mass_kg * mass_percent[i]
+        i_label = f'{labels[i]} ({i_percent}%, {round(i_mass, 2)} g)'
+
+        print(i_label)
+
+    # Format totals plot
+    tot_ax.set_xlabel('mass (kg)')
+    tot_ax.spines['left'].set_visible(False)
+    tot_ax.set_yticks([])
+    tot_ax.set_ylim(-2, 1)
 
     # Plot horizontal bar plot
     cat_ax.barh(
@@ -128,14 +160,15 @@ def make_plot(
     # Format categories
     figure.subplots_adjust(
         left=0.3,
-        top=0.9,
-        hspace=3,
+        top=0.85,
+        hspace=1,
+        right=0.85,
     )
     cat_ax.set_yticks(df.index, df[name])
-
+    cat_ax.set_xlabel('mass (g)')
     # For both
     for ax in [tot_ax, cat_ax]:
-        ax.set_xlabel('mass (g)')
+
         for pos in ['right', 'top']:
             ax.spines[pos].set_visible(False)
 
