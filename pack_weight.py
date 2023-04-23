@@ -132,23 +132,44 @@ def make_plot(
         x_pos += i_val
 
     # Add markers for target pack mass
-    my_mass_kg = 66 * 1000
+    my_mass_kg = 66
+    # my_mass_kg = 20
     mass_percent = [0.15, 0.2]
     labels = ['min', 'max']
+    pos = ['right', 'left']
 
     # For min, max
     for i in range(2):
 
+        # Generate label
         i_percent = int(mass_percent[i] * 100)
         i_mass = my_mass_kg * mass_percent[i]
-        i_label = f'{labels[i]} ({i_percent}%, {round(i_mass, 2)} g)'
+        i_label = f'{labels[i]} ({i_percent}%, {round(i_mass, 2)} kg)'
 
-        print(i_label)
+        # Plot line
+        for i_color, i_width in zip(['#FFFFFF', '#777777'], [4, 1.5]):
+            tot_ax.plot(
+                [i_mass] * 2,
+                [-0.8, 0.5],
+                lw=i_width,
+                color=i_color,
+            )
+
+        # Plot label
+        tot_ax.text(
+            i_mass,
+            -1.5,
+            i_label,
+            horizontalalignment=pos[i],
+            color='#777777',
+        )
 
     # Format totals plot
-    tot_ax.set_xlabel('mass (kg)')
+    total_pack_mass = grouped.sum()
+    tot_ax.set_xlabel(f'pack mass ({round(total_pack_mass, 2)} kg)')
     tot_ax.spines['left'].set_visible(False)
     tot_ax.set_yticks([])
+    tot_ax.set_xlim(0, 15)
     tot_ax.set_ylim(-2, 1)
 
     # Plot horizontal bar plot
@@ -165,7 +186,7 @@ def make_plot(
         right=0.85,
     )
     cat_ax.set_yticks(df.index, df[name])
-    cat_ax.set_xlabel('mass (g)')
+    cat_ax.set_xlabel('item mass (g)')
     # For both
     for ax in [tot_ax, cat_ax]:
 
