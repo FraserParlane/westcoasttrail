@@ -152,7 +152,7 @@ def make_figure():
         ax.spines[pos].set_visible(False)
     ax.set_xticks([])
     ax.set_yticks([])
-    figure.savefig('tides.pdf')
+    figure.savefig('tides-printable.pdf')
 
 
 if __name__ == '__main__':
