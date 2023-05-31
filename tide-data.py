@@ -8,7 +8,6 @@ import numpy as np
 
 def proc_data(
         csv_path: str = 'predictions_08525_Port Renfrew_2023-06-25.csv',
-        min_incr: int = 15,
 ) -> pd.DataFrame:
     """
     Process raw data from
@@ -22,11 +21,6 @@ def proc_data(
     # Make datetime better format
     old_format = '%Y-%m-%d %H:%M %Z'
     df['Date'] = df['Date'].apply(lambda x: datetime.strptime(x, old_format))
-
-    # Filter for 15 in
-    # quarter_hour = df['Date'].dt.minute % 10 == 0
-    # df = df[quarter_hour]
-    # df.reset_index(inplace=True, drop=True)
 
     # Note maxima or minima
     direction = 1
@@ -71,7 +65,7 @@ def proc_data(
 
         # Append entry
         entry_str = row['Date'][12:]
-        entry_str += '{:.2f}'.format(round(row['m'], 2))
+        entry_str += ' {:.2f}'.format(round(row['m'], 2))
         if row['Max'] != '':
             entry_str += f' {row["Max"]}'
         entry_val = (row['m'] - min_m) / range_m
@@ -102,7 +96,7 @@ def make_figure():
     for i in range(len(df)):
 
         # Get x, y pos
-        x_pos = (i // n_row) / (n_col)
+        x_pos = (i // n_row) / n_col
         y_pos = 1 - ((i % n_row) / (n_row + 1)) - (1 / n_row)
 
         # If outside bounds, stop
@@ -111,9 +105,10 @@ def make_figure():
             break
 
         # Determine formatting
-        fontdict = {}
-        if np.isnan(df.loc[i]['val']):
-            fontdict['fontweight'] = 'bold'
+        val = df.loc[i]['val']
+        font_dict = {}
+        if np.isnan(val):
+            font_dict['fontweight'] = 'bold'
 
         # Plot text
         ax.text(
@@ -122,16 +117,36 @@ def make_figure():
             df.loc[i]['str'],
             transform=ax.transAxes,
             fontsize=8,
-            fontdict=fontdict,
+            fontdict=font_dict,
         )
+
+        # Plot point
+        if not np.isnan(val):
+
+            xp_min = x_pos + 0.6 * (1 / n_col)
+            xp_pos = xp_min + 0.38 * val * (1 / n_col)
+            yp_pos = y_pos + 0.3 / n_row
+            ax.scatter(
+                xp_pos,
+                yp_pos,
+                c='black',
+                transform=ax.transAxes,
+                s=5,
+            )
+            ax.plot(
+                [xp_min, xp_pos],
+                [yp_pos, yp_pos],
+                c='black',
+                transform=ax.transAxes,
+            )
 
     # Format
     buff = 0.02
     figure.subplots_adjust(
-        left=buff,
-        right=1 - buff,
-        bottom=buff,
-        top=1 - buff,
+        left=0.02,
+        right=0.98,
+        bottom=0.02,
+        top=0.95,
     )
     for pos in ['top', 'right', 'left', 'bottom']:
         ax.spines[pos].set_visible(False)
@@ -140,8 +155,5 @@ def make_figure():
     figure.savefig('tides.pdf')
 
 
-
-
 if __name__ == '__main__':
-    # proc_data()
     make_figure()
